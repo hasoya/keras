@@ -5,6 +5,7 @@ import warnings
 import copy
 import time
 import numpy as np
+import scipy.sparse as sps
 import multiprocessing
 import threading
 try:
@@ -312,6 +313,23 @@ def slice_X(X, start=None, stop=None):
             return X[start]
         else:
             return X[start:stop]
+
+
+def to_dense(X):
+    if type(X) == list:
+        result = []
+        for x in X:
+            if sps.issparse(x):
+                result.append(x.toarray())
+            else:
+                result.append(x)
+
+        return result
+    else:
+        if sps.issparse(X):
+            return X.toarray()
+        else:
+            return X
 
 
 def weighted_objective(fn):
@@ -811,6 +829,8 @@ class Model(Container):
                         ins_batch = slice_X(ins[:-1], batch_ids) + [ins[-1]]
                     else:
                         ins_batch = slice_X(ins, batch_ids)
+                    ins_batch = to_dense(ins_batch)
+
                 except TypeError:
                     raise Exception('TypeError while preparing batch. '
                                     'If using HDF5 input data, '
@@ -872,6 +892,7 @@ class Model(Container):
                 ins_batch = slice_X(ins[:-1], batch_ids) + [ins[-1]]
             else:
                 ins_batch = slice_X(ins, batch_ids)
+            ins_batch = to_dense(ins_batch)
 
             batch_outs = f(ins_batch)
             if type(batch_outs) != list:
@@ -917,6 +938,7 @@ class Model(Container):
                 ins_batch = slice_X(ins[:-1], batch_ids) + [ins[-1]]
             else:
                 ins_batch = slice_X(ins, batch_ids)
+            ins_batch = to_dense(ins_batch)
 
             batch_outs = f(ins_batch)
             if type(batch_outs) == list:
